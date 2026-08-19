@@ -1,24 +1,66 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-int main(){
+#include "task.h"
 
-    char comando[100];
+#define MAX_INPUT 500
+#define MAX_TOKENS 30
 
-    while(1){
+int main() {
+
+    Task tarefas[MAX_TASKS];
+    int quantidade_tasks = 0;
+
+    char comando[MAX_INPUT];
+
+    while (1) {
+
         printf("processflow> ");
-        //faz o prompt ser mostrado na hora
         fflush(stdout);
 
-        //le o comando e coloca dentro de comando
-        fgets(comando, sizeof(comando), stdin);
+        if (fgets(comando, sizeof(comando), stdin) == NULL) {
+            break;
+        }
 
-        //remove /n
         comando[strcspn(comando, "\n")] = '\0';
 
-        if(strcmp(comando, "exit") == 0){
+        if (strcmp(comando, "exit") == 0) {
             break;
+        }
+
+        if (strlen(comando) == 0) {
+            continue;
+        }
+
+        char *tokens[MAX_TOKENS];
+        int quantidade_tokens = 0;
+
+        char *token = strtok(comando, " ");
+
+        while (token != NULL && quantidade_tokens < MAX_TOKENS) {
+
+            tokens[quantidade_tokens] = token;
+            quantidade_tokens++;
+
+            token = strtok(NULL, " ");
+        }
+
+        if (quantidade_tokens == 0) {
+            continue;
+        }
+
+        if (strcmp(tokens[0], "task") == 0) {
+
+            cadastrar_task(
+                tarefas,
+                &quantidade_tasks,
+                tokens,
+                quantidade_tokens
+            );
+
+        } else {
+
+            printf("Comando desconhecido.\n");
         }
     }
 
