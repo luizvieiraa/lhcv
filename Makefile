@@ -1,13 +1,13 @@
 CC = gcc
 CFLAGS = -std=c11 -Wall -Wextra -pedantic
-TARGET = processflow
-SRC = src/main.c src/task.c
 
-run: $(TARGET)
-	.\$(TARGET).exe
+all: processflow
 
-$(TARGET): $(SRC)
-	$(CC) $(CFLAGS) $(SRC) -o $(TARGET)
+processflow:
+	$(CC) $(CFLAGS) src/main.c src/task.c -o processflow
+
+run:
+	./processflow
 
 clean:
-	del /Q $(TARGET).exe
+	rm -f processflow

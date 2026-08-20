@@ -4,6 +4,16 @@
 
 #include "task.h"
 
+static char *duplicar_string(const char *texto) {
+    char *copia = malloc(strlen(texto) + 1);
+
+    if (copia != NULL) {
+        strcpy(copia, texto);
+    }
+
+    return copia;
+}
+
 void cadastrar_task(
     Task tarefas[],
     int *quantidade,
@@ -31,7 +41,7 @@ void cadastrar_task(
     for (int i = 2; i < quantidade_tokens; i++) {
 
         task->argumentos[task->quantidade_argumentos] =
-            strdup(tokens[i]);
+            duplicar_string(tokens[i]);
 
         task->quantidade_argumentos++;
     }
