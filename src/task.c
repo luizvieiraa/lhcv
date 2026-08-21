@@ -74,6 +74,24 @@ Task *buscar_task(
 
 int executar_task(Task *task) {
 
+    pid_t pid = iniciar_task(task);
+
+    if (pid == -1) {
+        return -1;
+    }
+
+    int status;
+
+    if (waitpid(pid, &status, 0) == -1) {
+        perror("waitpid");
+        return -1;
+    }
+
+    return 0;
+}
+
+pid_t iniciar_task(Task *task) {
+
     pid_t pid = fork();
 
     if (pid == -1) {
@@ -89,12 +107,6 @@ int executar_task(Task *task) {
         exit(EXIT_FAILURE);
     }
 
-    int status;
-
-    if (waitpid(pid, &status, 0) == -1) {
-        perror("waitpid");
-        return -1;
-    }
-
-    return 0;
+    return pid;
 }
+  

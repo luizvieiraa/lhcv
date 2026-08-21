@@ -1,6 +1,8 @@
 #ifndef TASK_H
 #define TASK_H
 
+#include <sys/types.h>
+
 #define MAX_TASKS 50
 #define MAX_ARGS 20
 
@@ -27,5 +29,6 @@ Task *buscar_task(
 );
 
 int executar_task(Task *Task);
+pid_t iniciar_task(Task *task);
 
 #endif
