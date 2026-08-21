@@ -62,60 +62,66 @@ int main() {
 
         } else if (strcmp(tokens[0], "run") == 0) {
 
-            if (quantidade_tokens != 2) {
-                printf("Erro: uso correto: run <nome>\n");
-                continue;
-            }
+    if (quantidade_tokens < 2) {
+        printf("Erro: uso correto: run <nome>\n");
+        continue;
+    }
+
+    if (strcmp(tokens[1], "sequential") == 0) {
+
+        if (quantidade_tokens < 3) {
+            printf(
+                "Erro: uso correto: "
+                "run sequential <tarefa1> [tarefa2...]\n"
+            );
+            continue;
+        }
+
+        for (int i = 2; i < quantidade_tokens; i++) {
 
             Task *task = buscar_task(
                 tarefas,
                 quantidade_tasks,
-                tokens[1]
+                tokens[i]
             );
 
             if (task == NULL) {
-                printf("Erro: task '%s' não encontrada.\n", tokens[1]);
-                continue;
+
+                printf(
+                    "Erro: task '%s' não encontrada.\n",
+                    tokens[i]
+                );
+
+                break;
             }
 
-            /*
-             * A partir daqui entra fork(), execv() e waitpid().
-             */
+            executar_task(task);
+        }
 
-            pid_t pid = fork();
+    } else {
 
-            if (pid == -1) {
+        if (quantidade_tokens != 2) {
+            printf("Erro: uso correto: run <nome>\n");
+            continue;
+        }
 
-                perror("fork");
-                continue;
+        Task *task = buscar_task(
+            tarefas,
+            quantidade_tasks,
+            tokens[1]
+        );
 
-            } else if (pid == 0) {
+        if (task == NULL) {
+            printf(
+                "Erro: task '%s' não encontrada.\n",
+                tokens[1]
+            );
+            continue;
+        }
 
-                /*
-                 * PROCESSO FILHO
-                 */
-
-                execv(task->programa, task->argumentos);
-
-                /*
-                 * Se chegou aqui, o execv() falhou.
-                 */
-
-                perror("execv");
-                return 1;
-
-            } else {
-
-                /*
-                 * PROCESSO PAI
-                 */
-
-                int status;
-
-                waitpid(pid, &status, 0);
-            }
-
-        } else {
+        executar_task(task);
+    }
+} else {
 
             printf("Comando desconhecido.\n");
         }

@@ -26,4 +26,6 @@ Task *buscar_task(
     char *nome
 );
 
+int executar_task(Task *Task);
+
 #endif

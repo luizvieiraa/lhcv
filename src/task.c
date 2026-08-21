@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include "task.h"
 
@@ -68,4 +70,31 @@ Task *buscar_task(
     }
 
     return NULL;
+}
+
+int executar_task(Task *task) {
+
+    pid_t pid = fork();
+
+    if (pid == -1) {
+        perror("fork");
+        return -1;
+    }
+
+    if (pid == 0) {
+
+        execv(task->programa, task->argumentos);
+
+        perror("execv");
+        exit(EXIT_FAILURE);
+    }
+
+    int status;
+
+    if (waitpid(pid, &status, 0) == -1) {
+        perror("waitpid");
+        return -1;
+    }
+
+    return 0;
 }
