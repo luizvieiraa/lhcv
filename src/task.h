@@ -20,4 +20,10 @@ void cadastrar_task(
     int quantidade_tokens
 );
 
+Task *buscar_task(
+    Task tarefas[],
+    int quantidade,
+    char *nome
+);
+
 #endif

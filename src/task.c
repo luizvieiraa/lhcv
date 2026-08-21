@@ -4,16 +4,6 @@
 
 #include "task.h"
 
-static char *duplicar_string(const char *texto) {
-    char *copia = malloc(strlen(texto) + 1);
-
-    if (copia != NULL) {
-        strcpy(copia, texto);
-    }
-
-    return copia;
-}
-
 void cadastrar_task(
     Task tarefas[],
     int *quantidade,
@@ -41,7 +31,17 @@ void cadastrar_task(
     for (int i = 2; i < quantidade_tokens; i++) {
 
         task->argumentos[task->quantidade_argumentos] =
-            duplicar_string(tokens[i]);
+            malloc(strlen(tokens[i]) + 1);
+
+        if (task->argumentos[task->quantidade_argumentos] == NULL) {
+            printf("Erro: memória insuficiente.\n");
+            return;
+        }
+
+        strcpy(
+            task->argumentos[task->quantidade_argumentos],
+            tokens[i]
+        );
 
         task->quantidade_argumentos++;
     }
@@ -51,4 +51,21 @@ void cadastrar_task(
     (*quantidade)++;
 
     printf("Task '%s' cadastrada.\n", task->nome);
+}
+
+
+Task *buscar_task(
+    Task tarefas[],
+    int quantidade,
+    char *nome
+) {
+
+    for (int i = 0; i < quantidade; i++) {
+
+        if (strcmp(tarefas[i].nome, nome) == 0) {
+            return &tarefas[i];
+        }
+    }
+
+    return NULL;
 }

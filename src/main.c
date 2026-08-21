@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #include "task.h"
 
@@ -57,6 +59,61 @@ int main() {
                 tokens,
                 quantidade_tokens
             );
+
+        } else if (strcmp(tokens[0], "run") == 0) {
+
+            if (quantidade_tokens != 2) {
+                printf("Erro: uso correto: run <nome>\n");
+                continue;
+            }
+
+            Task *task = buscar_task(
+                tarefas,
+                quantidade_tasks,
+                tokens[1]
+            );
+
+            if (task == NULL) {
+                printf("Erro: task '%s' não encontrada.\n", tokens[1]);
+                continue;
+            }
+
+            /*
+             * A partir daqui entra fork(), execv() e waitpid().
+             */
+
+            pid_t pid = fork();
+
+            if (pid == -1) {
+
+                perror("fork");
+                continue;
+
+            } else if (pid == 0) {
+
+                /*
+                 * PROCESSO FILHO
+                 */
+
+                execv(task->programa, task->argumentos);
+
+                /*
+                 * Se chegou aqui, o execv() falhou.
+                 */
+
+                perror("execv");
+                return 1;
+
+            } else {
+
+                /*
+                 * PROCESSO PAI
+                 */
+
+                int status;
+
+                waitpid(pid, &status, 0);
+            }
 
         } else {
 
