@@ -7,13 +7,15 @@
 #define MAX_ARGS 20
 
 typedef struct {
-
     char nome[50];
     char programa[100];
     char *argumentos[MAX_ARGS];
     int quantidade_argumentos;
 
-}Task;
+    char arquivo_entrada[200];
+    char arquivo_saida[200];
+    int modo_append;
+} Task;
 
 void cadastrar_task(
     Task tarefas[],
@@ -30,5 +32,13 @@ Task *buscar_task(
 
 int executar_task(Task *Task);
 pid_t iniciar_task(Task *task);
+
+int definir_input(Task *task, char *arquivo);
+
+int definir_output(
+    Task *task,
+    char *arquivo,
+    int append
+);
 
 #endif

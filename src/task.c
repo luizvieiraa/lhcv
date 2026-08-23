@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #include "task.h"
 
@@ -12,7 +13,6 @@ void cadastrar_task(
     char *tokens[],
     int quantidade_tokens
 ) {
-
     if (*quantidade >= MAX_TASKS) {
         printf("Erro: limite de tarefas atingido.\n");
         return;
@@ -25,13 +25,16 @@ void cadastrar_task(
 
     Task *task = &tarefas[*quantidade];
 
+    task->arquivo_entrada[0] = '\0';
+    task->arquivo_saida[0] = '\0';
+    task->modo_append = 0;
+
     strcpy(task->nome, tokens[1]);
     strcpy(task->programa, tokens[2]);
 
     task->quantidade_argumentos = 0;
 
     for (int i = 2; i < quantidade_tokens; i++) {
-
         task->argumentos[task->quantidade_argumentos] =
             malloc(strlen(tokens[i]) + 1);
 
@@ -55,15 +58,12 @@ void cadastrar_task(
     printf("Task '%s' cadastrada.\n", task->nome);
 }
 
-
 Task *buscar_task(
     Task tarefas[],
     int quantidade,
     char *nome
 ) {
-
     for (int i = 0; i < quantidade; i++) {
-
         if (strcmp(tarefas[i].nome, nome) == 0) {
             return &tarefas[i];
         }
@@ -73,7 +73,6 @@ Task *buscar_task(
 }
 
 int executar_task(Task *task) {
-
     pid_t pid = iniciar_task(task);
 
     if (pid == -1) {
@@ -91,7 +90,6 @@ int executar_task(Task *task) {
 }
 
 pid_t iniciar_task(Task *task) {
-
     pid_t pid = fork();
 
     if (pid == -1) {
@@ -100,8 +98,68 @@ pid_t iniciar_task(Task *task) {
     }
 
     if (pid == 0) {
+        /*
+         * REDIRECIONAMENTO DE ENTRADA
+         */
+        if (task->arquivo_entrada[0] != '\0') {
+            int fd = open(
+                task->arquivo_entrada,
+                O_RDONLY
+            );
 
-        execv(task->programa, task->argumentos);
+            if (fd == -1) {
+                perror("open input");
+                exit(EXIT_FAILURE);
+            }
+
+            if (dup2(fd, STDIN_FILENO) == -1) {
+                perror("dup2 input");
+                close(fd);
+                exit(EXIT_FAILURE);
+            }
+
+            close(fd);
+        }
+
+        /*
+         * REDIRECIONAMENTO DE SAÍDA
+         */
+        if (task->arquivo_saida[0] != '\0') {
+            int flags = O_WRONLY | O_CREAT;
+
+            if (task->modo_append) {
+                flags |= O_APPEND;
+            } else {
+                flags |= O_TRUNC;
+            }
+
+            int fd = open(
+                task->arquivo_saida,
+                flags,
+                0644
+            );
+
+            if (fd == -1) {
+                perror("open output");
+                exit(EXIT_FAILURE);
+            }
+
+            if (dup2(fd, STDOUT_FILENO) == -1) {
+                perror("dup2 output");
+                close(fd);
+                exit(EXIT_FAILURE);
+            }
+
+            close(fd);
+        }
+
+        /*
+         * Executa o programa da task.
+         */
+        execv(
+            task->programa,
+            task->argumentos
+        );
 
         perror("execv");
         exit(EXIT_FAILURE);
@@ -109,4 +167,21 @@ pid_t iniciar_task(Task *task) {
 
     return pid;
 }
-  
+
+int definir_input(Task *task, char *arquivo) {
+    strcpy(task->arquivo_entrada, arquivo);
+
+    return 0;
+}
+
+int definir_output(
+    Task *task,
+    char *arquivo,
+    int append
+) {
+    strcpy(task->arquivo_saida, arquivo);
+
+    task->modo_append = append;
+
+    return 0;
+}
