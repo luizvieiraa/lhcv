@@ -41,4 +41,9 @@ int definir_output(
     int append
 );
 
+int executar_pipe(
+    Task *tasks[],
+    int quantidade
+);
+
 #endif

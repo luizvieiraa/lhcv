@@ -185,3 +185,145 @@ int definir_output(
 
     return 0;
 }
+
+int executar_pipe(
+    Task *tasks[],
+    int quantidade
+) {
+
+    if (quantidade < 2) {
+
+        printf(
+            "Erro: pipe precisa de pelo menos duas tarefas.\n"
+        );
+
+        return -1;
+    }
+
+    /*
+     * Para N tarefas precisamos de N - 1 pipes.
+     */
+    int pipes[quantidade - 1][2];
+
+    /*
+     * Cria os pipes.
+     */
+    for (int i = 0; i < quantidade - 1; i++) {
+
+        if (pipe(pipes[i]) == -1) {
+            perror("pipe");
+            return -1;
+        }
+    }
+
+    /*
+     * Guarda os PIDs dos filhos.
+     */
+    pid_t pids[quantidade];
+
+    /*
+     * Cria um processo para cada task.
+     */
+    for (int i = 0; i < quantidade; i++) {
+
+        pid_t pid = fork();
+
+        if (pid == -1) {
+            perror("fork");
+            return -1;
+        }
+
+        if (pid == 0) {
+
+            /*
+             * Se não for a primeira task,
+             * recebe entrada do pipe anterior.
+             */
+            if (i > 0) {
+
+                if (dup2(
+                    pipes[i - 1][0],
+                    STDIN_FILENO
+                ) == -1) {
+
+                    perror("dup2 input pipe");
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            /*
+             * Se não for a última task,
+             * manda a saída para o próximo pipe.
+             */
+            if (i < quantidade - 1) {
+
+                if (dup2(
+                    pipes[i][1],
+                    STDOUT_FILENO
+                ) == -1) {
+
+                    perror("dup2 output pipe");
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            /*
+             * Fecha todos os descritores
+             * originais dos pipes.
+             */
+            for (
+                int j = 0;
+                j < quantidade - 1;
+                j++
+            ) {
+
+                close(pipes[j][0]);
+                close(pipes[j][1]);
+            }
+
+            /*
+             * Executa a tarefa.
+             */
+            execv(
+                tasks[i]->programa,
+                tasks[i]->argumentos
+            );
+
+            perror("execv");
+            exit(EXIT_FAILURE);
+        }
+
+        /*
+         * Processo pai guarda o PID.
+         */
+        pids[i] = pid;
+    }
+
+    /*
+     * O pai não utiliza nenhum dos pipes.
+     */
+    for (int i = 0; i < quantidade - 1; i++) {
+
+        close(pipes[i][0]);
+        close(pipes[i][1]);
+    }
+
+    /*
+     * Espera todas as tarefas terminarem.
+     */
+    for (int i = 0; i < quantidade; i++) {
+
+        int status;
+
+        if (waitpid(
+            pids[i],
+            &status,
+            0
+        ) == -1) {
+
+            perror("waitpid");
+        }
+    }
+
+    return 0;
+}
