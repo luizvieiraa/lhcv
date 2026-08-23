@@ -30,8 +30,15 @@ Task *buscar_task(
     char *nome
 );
 
-int executar_task(Task *Task);
-pid_t iniciar_task(Task *task);
+pid_t iniciar_task(
+    Task *task,
+    char *diretorio_trabalho
+);
+
+int executar_task(
+    Task *task,
+    char *diretorio_trabalho
+);
 
 int definir_input(Task *task, char *arquivo);
 
@@ -43,7 +50,8 @@ int definir_output(
 
 int executar_pipe(
     Task *tasks[],
-    int quantidade
+    int quantidade,
+    char *diretorio_trabalho
 );
 
 #endif

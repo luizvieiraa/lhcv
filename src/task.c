@@ -72,8 +72,15 @@ Task *buscar_task(
     return NULL;
 }
 
-int executar_task(Task *task) {
-    pid_t pid = iniciar_task(task);
+int executar_task(
+    Task *task,
+    char *diretorio_trabalho
+) {
+
+    pid_t pid = iniciar_task(
+        task,
+        diretorio_trabalho
+    );
 
     if (pid == -1) {
         return -1;
@@ -89,7 +96,11 @@ int executar_task(Task *task) {
     return 0;
 }
 
-pid_t iniciar_task(Task *task) {
+pid_t iniciar_task(
+    Task *task,
+    char *diretorio_trabalho
+) {
+
     pid_t pid = fork();
 
     if (pid == -1) {
@@ -98,10 +109,26 @@ pid_t iniciar_task(Task *task) {
     }
 
     if (pid == 0) {
+
         /*
-         * REDIRECIONAMENTO DE ENTRADA
+         * WORKDIR
+         */
+        if (
+            diretorio_trabalho != NULL &&
+            diretorio_trabalho[0] != '\0'
+        ) {
+
+            if (chdir(diretorio_trabalho) == -1) {
+                perror("chdir");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        /*
+         * INPUT
          */
         if (task->arquivo_entrada[0] != '\0') {
+
             int fd = open(
                 task->arquivo_entrada,
                 O_RDONLY
@@ -122,9 +149,10 @@ pid_t iniciar_task(Task *task) {
         }
 
         /*
-         * REDIRECIONAMENTO DE SAÍDA
+         * OUTPUT / APPEND
          */
         if (task->arquivo_saida[0] != '\0') {
+
             int flags = O_WRONLY | O_CREAT;
 
             if (task->modo_append) {
@@ -154,7 +182,7 @@ pid_t iniciar_task(Task *task) {
         }
 
         /*
-         * Executa o programa da task.
+         * EXEC
          */
         execv(
             task->programa,
@@ -188,26 +216,19 @@ int definir_output(
 
 int executar_pipe(
     Task *tasks[],
-    int quantidade
+    int quantidade,
+    char *diretorio_trabalho
 ) {
 
     if (quantidade < 2) {
-
         printf(
             "Erro: pipe precisa de pelo menos duas tarefas.\n"
         );
-
         return -1;
     }
 
-    /*
-     * Para N tarefas precisamos de N - 1 pipes.
-     */
     int pipes[quantidade - 1][2];
 
-    /*
-     * Cria os pipes.
-     */
     for (int i = 0; i < quantidade - 1; i++) {
 
         if (pipe(pipes[i]) == -1) {
@@ -216,14 +237,8 @@ int executar_pipe(
         }
     }
 
-    /*
-     * Guarda os PIDs dos filhos.
-     */
     pid_t pids[quantidade];
 
-    /*
-     * Cria um processo para cada task.
-     */
     for (int i = 0; i < quantidade; i++) {
 
         pid_t pid = fork();
@@ -236,15 +251,30 @@ int executar_pipe(
         if (pid == 0) {
 
             /*
-             * Se não for a primeira task,
-             * recebe entrada do pipe anterior.
+             * WORKDIR
+             */
+            if (
+                diretorio_trabalho != NULL &&
+                diretorio_trabalho[0] != '\0'
+            ) {
+
+                if (chdir(diretorio_trabalho) == -1) {
+                    perror("chdir");
+                    exit(EXIT_FAILURE);
+                }
+            }
+
+            /*
+             * Entrada do pipe anterior
              */
             if (i > 0) {
 
-                if (dup2(
-                    pipes[i - 1][0],
-                    STDIN_FILENO
-                ) == -1) {
+                if (
+                    dup2(
+                        pipes[i - 1][0],
+                        STDIN_FILENO
+                    ) == -1
+                ) {
 
                     perror("dup2 input pipe");
                     exit(EXIT_FAILURE);
@@ -252,15 +282,16 @@ int executar_pipe(
             }
 
             /*
-             * Se não for a última task,
-             * manda a saída para o próximo pipe.
+             * Saída para o próximo pipe
              */
             if (i < quantidade - 1) {
 
-                if (dup2(
-                    pipes[i][1],
-                    STDOUT_FILENO
-                ) == -1) {
+                if (
+                    dup2(
+                        pipes[i][1],
+                        STDOUT_FILENO
+                    ) == -1
+                ) {
 
                     perror("dup2 output pipe");
                     exit(EXIT_FAILURE);
@@ -269,7 +300,6 @@ int executar_pipe(
 
             /*
              * Fecha todos os descritores
-             * originais dos pipes.
              */
             for (
                 int j = 0;
@@ -281,9 +311,6 @@ int executar_pipe(
                 close(pipes[j][1]);
             }
 
-            /*
-             * Executa a tarefa.
-             */
             execv(
                 tasks[i]->programa,
                 tasks[i]->argumentos
@@ -293,33 +320,31 @@ int executar_pipe(
             exit(EXIT_FAILURE);
         }
 
-        /*
-         * Processo pai guarda o PID.
-         */
         pids[i] = pid;
     }
 
     /*
-     * O pai não utiliza nenhum dos pipes.
+     * Pai fecha os pipes
      */
     for (int i = 0; i < quantidade - 1; i++) {
-
         close(pipes[i][0]);
         close(pipes[i][1]);
     }
 
     /*
-     * Espera todas as tarefas terminarem.
+     * Pai espera todos
      */
     for (int i = 0; i < quantidade; i++) {
 
         int status;
 
-        if (waitpid(
-            pids[i],
-            &status,
-            0
-        ) == -1) {
+        if (
+            waitpid(
+                pids[i],
+                &status,
+                0
+            ) == -1
+        ) {
 
             perror("waitpid");
         }
