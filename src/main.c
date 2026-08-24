@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include "job.h"
 
 #include "task.h"
 
@@ -15,6 +16,9 @@ int main() {
     Task tarefas[MAX_TASKS];
     int quantidade_tasks = 0;
 
+    Job jobs[MAX_JOBS];
+    int quantidade_jobs = 0;
+
     char diretorio_trabalho[MAX_WORKDIR] = "";
 
     char comando[MAX_INPUT];
@@ -24,38 +28,20 @@ int main() {
         printf("processflow> ");
         fflush(stdout);
 
-        /*
-         * Lê uma linha do terminal.
-         *
-         * Se fgets() retornar NULL, significa por exemplo
-         * que houve CTRL-D (EOF).
-         */
         if (fgets(comando, sizeof(comando), stdin) == NULL) {
             break;
         }
 
-        /*
-         * Remove o '\n' colocado pelo fgets().
-         */
         comando[strcspn(comando, "\n")] = '\0';
 
-        /*
-         * COMANDO EXIT
-         */
         if (strcmp(comando, "exit") == 0) {
             break;
         }
 
-        /*
-         * Ignora linhas vazias.
-         */
         if (strlen(comando) == 0) {
             continue;
         }
 
-        /*
-         * Divide o comando em tokens.
-         */
         char *tokens[MAX_TOKENS];
         int quantidade_tokens = 0;
 
@@ -76,16 +62,6 @@ int main() {
             continue;
         }
 
-        /*
-         * ==================================================
-         * COMANDO TASK
-         *
-         * task <nome> <programa> [argumentos...]
-         *
-         * Exemplo:
-         * task listar /bin/ls -l
-         * ==================================================
-         */
         if (strcmp(tokens[0], "task") == 0) {
 
             cadastrar_task(
@@ -96,16 +72,6 @@ int main() {
             );
         }
 
-        /*
-         * ==================================================
-         * COMANDO INPUT
-         *
-         * input <tarefa> <arquivo>
-         *
-         * Exemplo:
-         * input mostrar nomes.txt
-         * ==================================================
-         */
         else if (strcmp(tokens[0], "input") == 0) {
 
             if (quantidade_tokens != 3) {
@@ -140,13 +106,6 @@ int main() {
             );
         }
 
-        /*
-         * ==================================================
-         * COMANDO OUTPUT
-         *
-         * output <tarefa> <arquivo>
-         * ==================================================
-         */
         else if (strcmp(tokens[0], "output") == 0) {
 
             if (quantidade_tokens != 3) {
@@ -175,9 +134,6 @@ int main() {
                 continue;
             }
 
-            /*
-             * 0 significa que não é append.
-             */
             definir_output(
                 task,
                 tokens[2],
@@ -185,13 +141,7 @@ int main() {
             );
         }
 
-        /*
-         * ==================================================
-         * COMANDO APPEND
-         *
-         * append <tarefa> <arquivo>
-         * ==================================================
-         */
+
         else if (strcmp(tokens[0], "append") == 0) {
 
             if (quantidade_tokens != 3) {
@@ -220,9 +170,7 @@ int main() {
                 continue;
             }
 
-            /*
-             * 1 significa append.
-             */
+        
             definir_output(
                 task,
                 tokens[2],
@@ -230,16 +178,6 @@ int main() {
             );
         }
 
-        /*
-         * ==================================================
-         * COMANDO WORKDIR
-         *
-         * workdir <diretorio>
-         *
-         * Exemplo:
-         * workdir /tmp
-         * ==================================================
-         */
         else if (strcmp(tokens[0], "workdir") == 0) {
 
             if (quantidade_tokens != 2) {
@@ -254,9 +192,7 @@ int main() {
 
             struct stat info;
 
-            /*
-             * Verifica se o caminho existe.
-             */
+    
             if (stat(tokens[1], &info) != 0) {
 
                 printf(
@@ -267,9 +203,7 @@ int main() {
                 continue;
             }
 
-            /*
-             * Verifica se realmente é um diretório.
-             */
+
             if (!S_ISDIR(info.st_mode)) {
 
                 printf(
@@ -280,23 +214,62 @@ int main() {
                 continue;
             }
 
-            /*
-             * Guarda o diretório.
-             *
-             * O processo pai não chama chdir().
-             * O chdir será executado nos processos filhos.
-             */
             strcpy(
                 diretorio_trabalho,
                 tokens[1]
             );
         }
 
-        /*
-         * ==================================================
-         * COMANDO RUN
-         * ==================================================
-         */
+        else if(strcmp(tokens[0], "start") == 0){
+
+            if (quantidade_tokens != 2) {
+                 printf("Erro: uso correto: start <tarefa>\n");
+                 continue;
+            }
+
+        Task *task = buscar_task(
+        tarefas,
+        quantidade_tasks,
+        tokens[1]
+    );
+
+            if (task == NULL) {
+
+                printf(
+                    "Erro: task '%s' não encontrada.\n",
+                    tokens[1]
+                );
+
+                continue;
+            }
+
+        pid_t pid = iniciar_task(
+            task,
+            diretorio_trabalho
+        );
+
+            if (pid == -1) {
+                continue;
+            }
+
+        int job_id = adicionar_job(
+            jobs,
+            &quantidade_jobs,
+            pid
+        );
+
+            if (job_id == -1) {
+                continue;
+            }
+
+        printf(
+            "[%d] %d\n",
+            job_id,
+            pid
+        );
+        }
+
+
         else if (strcmp(tokens[0], "run") == 0) {
 
             if (quantidade_tokens < 2) {
