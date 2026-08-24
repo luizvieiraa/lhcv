@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -24,6 +25,11 @@ int main() {
     char comando[MAX_INPUT];
 
     while (1) {
+
+        atualizar_jobs(
+            jobs,
+            quantidade_jobs
+        );
 
         printf("processflow> ");
         fflush(stdout);
@@ -220,6 +226,19 @@ int main() {
             );
         }
 
+        else if (strcmp(tokens[0], "jobs") == 0) {
+
+            if (quantidade_tokens != 1) {
+                printf("Erro: uso correto: jobs\n");
+                continue;
+            }
+
+            listar_jobs(
+                jobs,
+                quantidade_jobs
+            );
+        }
+
         else if(strcmp(tokens[0], "start") == 0){
 
             if (quantidade_tokens != 2) {
@@ -255,7 +274,8 @@ int main() {
         int job_id = adicionar_job(
             jobs,
             &quantidade_jobs,
-            pid
+            pid,
+            task -> nome
         );
 
             if (job_id == -1) {
@@ -269,6 +289,32 @@ int main() {
         );
         }
 
+        else if (strcmp(tokens[0], "wait") == 0) {
+
+            if (quantidade_tokens != 2) {
+                printf("Erro: uso correto: wait <jobId>\n");
+                continue;
+            }
+
+            int job_id = atoi(tokens[1]);
+
+            Job *job = buscar_job(
+                jobs,
+                quantidade_jobs,
+                job_id
+            );
+
+            if (job == NULL) {
+                printf(
+                    "Erro: job %d não existe.\n",
+                    job_id
+                );
+                continue;
+            }
+
+            aguardar_job(job);
+            }
+
 
         else if (strcmp(tokens[0], "run") == 0) {
 
@@ -281,13 +327,6 @@ int main() {
                 continue;
             }
 
-            /*
-             * ==============================================
-             * RUN SEQUENTIAL
-             *
-             * run sequential tarefa1 tarefa2 ...
-             * ==============================================
-             */
             if (
                 strcmp(
                     tokens[1],
@@ -329,10 +368,6 @@ int main() {
                         break;
                     }
 
-                    /*
-                     * executar_task cria o filho
-                     * e espera ele terminar.
-                     */
                     executar_task(
                         task,
                         diretorio_trabalho
@@ -340,13 +375,6 @@ int main() {
                 }
             }
 
-            /*
-             * ==============================================
-             * RUN PARALLEL
-             *
-             * run parallel tarefa1 tarefa2 ...
-             * ==============================================
-             */
             else if (
                 strcmp(
                     tokens[1],
@@ -368,9 +396,6 @@ int main() {
                 pid_t pids[MAX_TOKENS];
                 int quantidade_pids = 0;
 
-                /*
-                 * Primeiro iniciamos todas as tarefas.
-                 */
                 for (
                     int i = 2;
                     i < quantidade_tokens;
@@ -406,9 +431,7 @@ int main() {
                     }
                 }
 
-                /*
-                 * Depois esperamos todos terminarem.
-                 */
+
                 for (
                     int i = 0;
                     i < quantidade_pids;
@@ -430,13 +453,7 @@ int main() {
                 }
             }
 
-            /*
-             * ==============================================
-             * RUN PIPE
-             *
-             * run pipe tarefa1 tarefa2 ...
-             * ==============================================
-             */
+
             else if (
                 strcmp(
                     tokens[1],
@@ -444,13 +461,6 @@ int main() {
                 ) == 0
             ) {
 
-                /*
-                 * Precisamos de pelo menos:
-                 *
-                 * run pipe tarefa1 tarefa2
-                 *
-                 * 4 tokens.
-                 */
                 if (quantidade_tokens < 4) {
 
                     printf(
@@ -470,10 +480,6 @@ int main() {
 
                 int erro = 0;
 
-                /*
-                 * Localiza todas as tasks antes
-                 * de iniciar o pipe.
-                 */
                 for (
                     int i = 0;
                     i < quantidade_pipe;
@@ -510,16 +516,6 @@ int main() {
                 );
             }
 
-            /*
-             * ==============================================
-             * RUN SIMPLES
-             *
-             * run <nome>
-             *
-             * Exemplo:
-             * run listar
-             * ==============================================
-             */
             else {
 
                 if (quantidade_tokens != 2) {
@@ -549,12 +545,6 @@ int main() {
                     continue;
                 }
 
-                /*
-                 * CORREÇÃO IMPORTANTE:
-                 *
-                 * O run simples também precisa receber
-                 * diretorio_trabalho.
-                 */
                 executar_task(
                     task,
                     diretorio_trabalho
@@ -562,11 +552,6 @@ int main() {
             }
         }
 
-        /*
-         * ==================================================
-         * COMANDO DESCONHECIDO
-         * ==================================================
-         */
         else {
 
             printf(

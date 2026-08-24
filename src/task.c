@@ -110,9 +110,6 @@ pid_t iniciar_task(
 
     if (pid == 0) {
 
-        /*
-         * WORKDIR
-         */
         if (
             diretorio_trabalho != NULL &&
             diretorio_trabalho[0] != '\0'
@@ -124,9 +121,6 @@ pid_t iniciar_task(
             }
         }
 
-        /*
-         * INPUT
-         */
         if (task->arquivo_entrada[0] != '\0') {
 
             int fd = open(
@@ -148,9 +142,6 @@ pid_t iniciar_task(
             close(fd);
         }
 
-        /*
-         * OUTPUT / APPEND
-         */
         if (task->arquivo_saida[0] != '\0') {
 
             int flags = O_WRONLY | O_CREAT;
@@ -181,9 +172,6 @@ pid_t iniciar_task(
             close(fd);
         }
 
-        /*
-         * EXEC
-         */
         execv(
             task->programa,
             task->argumentos
@@ -250,9 +238,6 @@ int executar_pipe(
 
         if (pid == 0) {
 
-            /*
-             * WORKDIR
-             */
             if (
                 diretorio_trabalho != NULL &&
                 diretorio_trabalho[0] != '\0'
@@ -264,9 +249,6 @@ int executar_pipe(
                 }
             }
 
-            /*
-             * Entrada do pipe anterior
-             */
             if (i > 0) {
 
                 if (
@@ -281,9 +263,6 @@ int executar_pipe(
                 }
             }
 
-            /*
-             * Saída para o próximo pipe
-             */
             if (i < quantidade - 1) {
 
                 if (
@@ -298,9 +277,6 @@ int executar_pipe(
                 }
             }
 
-            /*
-             * Fecha todos os descritores
-             */
             for (
                 int j = 0;
                 j < quantidade - 1;
@@ -323,17 +299,11 @@ int executar_pipe(
         pids[i] = pid;
     }
 
-    /*
-     * Pai fecha os pipes
-     */
     for (int i = 0; i < quantidade - 1; i++) {
         close(pipes[i][0]);
         close(pipes[i][1]);
     }
 
-    /*
-     * Pai espera todos
-     */
     for (int i = 0; i < quantidade; i++) {
 
         int status;
