@@ -1,0 +1,11 @@
+Makefile
+README.md
+evidencias.log
+historico.txt
+nomes.txt
+processflow
+resultado.txt
+src
+teste.pf
+teste_saida.txt
+Mon Aug 24 18:37:45 -03 2026

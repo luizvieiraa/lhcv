@@ -1,0 +1,2 @@
+task data /bin/date
+run data

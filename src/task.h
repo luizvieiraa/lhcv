@@ -54,4 +54,7 @@ int executar_pipe(
     char *diretorio_trabalho
 );
 
+void liberar_tasks(Task tarefas[], int quantidade);
+void informar_status_processo(pid_t pid, int status);
+
 #endif

@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <errno.h>
+#include <limits.h>
 #include "job.h"
 
 #include "task.h"
@@ -70,6 +72,18 @@ int main(int argc, char *argv[]) {
             break;
         }
 
+        if (strchr(comando, '\n') == NULL) {
+            int proximo = fgetc(entrada);
+            if (proximo != '\n' && proximo != EOF) {
+                while (proximo != '\n' && proximo != EOF) {
+                    proximo = fgetc(entrada);
+                }
+                printf("Erro: linha de comando excede %d caracteres.\n",
+                       MAX_INPUT - 1);
+                continue;
+            }
+        }
+
         if (modo_workflow) {
 
             printf("%s", comando);
@@ -100,7 +114,7 @@ int main(int argc, char *argv[]) {
         char *tokens[MAX_TOKENS];
         int quantidade_tokens = 0;
 
-        char *token = strtok(comando, " ");
+        char *token = strtok(comando, " \t");
 
         while (
             token != NULL &&
@@ -110,7 +124,12 @@ int main(int argc, char *argv[]) {
             tokens[quantidade_tokens] = token;
             quantidade_tokens++;
 
-            token = strtok(NULL, " ");
+            token = strtok(NULL, " \t");
+        }
+
+        if (token != NULL) {
+            printf("Erro: limite de %d tokens excedido.\n", MAX_TOKENS);
+            continue;
         }
 
         if (quantidade_tokens == 0) {
@@ -269,10 +288,11 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
-            strcpy(
-                diretorio_trabalho,
-                tokens[1]
-            );
+            if (strlen(tokens[1]) >= sizeof(diretorio_trabalho)) {
+                printf("Erro: caminho do workdir e muito longo.\n");
+                continue;
+            }
+            memcpy(diretorio_trabalho, tokens[1], strlen(tokens[1]) + 1);
         }
 
         else if (strcmp(tokens[0], "jobs") == 0) {
@@ -311,6 +331,11 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
+            if (quantidade_jobs >= MAX_JOBS) {
+                printf("Erro: limite maximo de jobs atingido.\n");
+                continue;
+            }
+
         pid_t pid = iniciar_task(
             task,
             diretorio_trabalho
@@ -345,7 +370,15 @@ int main(int argc, char *argv[]) {
                 continue;
             }
 
-            int job_id = atoi(tokens[1]);
+            errno = 0;
+            char *fim = NULL;
+            long valor = strtol(tokens[1], &fim, 10);
+            if (errno == ERANGE || fim == tokens[1] || *fim != '\0' ||
+                valor <= 0 || valor > INT_MAX) {
+                printf("Erro: jobId invalido: '%s'.\n", tokens[1]);
+                continue;
+            }
+            int job_id = (int)valor;
 
             Job *job = buscar_job(
                 jobs,
@@ -444,6 +477,9 @@ int main(int argc, char *argv[]) {
 
                 pid_t pids[MAX_TOKENS];
                 int quantidade_pids = 0;
+                Task *tasks_parallel[MAX_TOKENS];
+                int quantidade_tasks_parallel = 0;
+                int erro_parallel = 0;
 
                 for (
                     int i = 2;
@@ -465,8 +501,20 @@ int main(int argc, char *argv[]) {
                             tokens[i]
                         );
 
-                        continue;
+                        erro_parallel = 1;
+                        break;
                     }
+
+                    tasks_parallel[quantidade_tasks_parallel] = task;
+                    quantidade_tasks_parallel++;
+                }
+
+                if (erro_parallel) {
+                    continue;
+                }
+
+                for (int i = 0; i < quantidade_tasks_parallel; i++) {
+                    Task *task = tasks_parallel[i];
 
                     pid_t pid = iniciar_task(
                         task,
@@ -489,15 +537,16 @@ int main(int argc, char *argv[]) {
 
                     int status;
 
-                    if (
-                        waitpid(
+                    pid_t resultado = waitpid(
                             pids[i],
                             &status,
                             0
-                        ) == -1
-                    ) {
+                        );
+                    if (resultado == -1) {
 
                         perror("waitpid");
+                    } else {
+                        informar_status_processo(pids[i], status);
                     }
                 }
             }
@@ -612,6 +661,8 @@ int main(int argc, char *argv[]) {
     if(modo_workflow){
         fclose(entrada);
     }
+
+    liberar_tasks(tarefas, quantidade_tasks);
 
     return 0;
 }

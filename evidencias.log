@@ -1,0 +1,161 @@
+Script started on 2026-08-24 18:31:02-03:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="104" LINES="49"]
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ date
+[?2004lMon Aug 24 18:31:19 -03 2026
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ whoami
+[?2004lluizv
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ pwd
+[?2004l/mnt/c/Users/luizv/Desktop/3º periodo/processflow
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ make clean
+[?2004lrm -f processflow
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ make
+[?2004lgcc -std=c11 -Wall -Wextra -pedantic src/main.c src/task.c src/job.c -o processflow
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ ls
+[?2004l[0m[01;32mMakefile[0m  [01;32mREADME.md[0m  [01;32mevidencias.log[0m  [01;32mhistorico.txt[0m  [01;32mnomes.txt[0m  [01;32mprocessflow[0m  [01;32mresultado.txt[0m  [34;42msrc[0m  [01;32mteste.pf[0m
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ make run
+[?2004l./processflow
+processflow> task listar /bin/ls
+Task 'listar' cadastrada.
+processflow> task data /bin/ad  date
+Task 'data' cadastrada.
+processflow> task onde /bin/pwd
+Task 'onde' cadastrada.
+processflow> task dormir1/  /bin/sleep 1
+Task 'dormir1' cadastrada.
+processflow> task dormir3 /bin/sleep 3
+Task 'dormir3' cadastrada.
+processflow> s tasj   k mostrar /bin/cat
+Task 'mostrar' cadastrada.
+processflow> sa  task contar ; /usr/bin/wc -l
+Task 'contar' cadastrada.
+processflow> run data
+Mon Aug 24 18:34:42 -03 2026
+processflow> run listar
+Makefile  README.md  evidencias.log  historico.txt  nomes.txt  processflow  resultado.txt  src	teste.pf
+processflow> run 			daa ta
+Mon Aug 24 18:34:54 -03 2026
+processflow> ts ask	eco	/bin/echo	TESTE	
+Task 'eco' cadastrada.
+processflow> RUN   run eco
+TESTE
+processflow> run sequential data listar
+Mon Aug 24 18:35:33 -03 2026
+Makefile  README.md  evidencias.log  historico.txt  nomes.txt  processflow  resultado.txt  src	teste.pf
+processflow> run parallel dormir3 dormir1
+processflow> run pipe listar contar
+9
+processflow> output listar teste_saida.txt
+processflow> run listar
+processflow> task ler_saida/  /bin/cat teste_saida.txt
+Task 'ler_saida' cadastrada.
+processflow> run ler_saida
+Makefile
+README.md
+evidencias.log
+historico.txt
+nomes.txt
+processflow
+resultado.txt
+src
+teste.pf
+teste_saida.txt
+processflow> append data teste_saida.txt
+processflow> run data
+processflow> run ler_saida
+Makefile
+README.md
+evidencias.log
+historico.txt
+nomes.txt
+processflow
+resultado.txt
+src
+teste.pf
+teste_saida.txt
+Mon Aug 24 18:37:45 -03 2026
+processflow> input mostrar teste_saida.txt
+processflow> run mostrar
+Makefile
+README.md
+evidencias.log
+historico.txt
+nomes.txt
+processflow
+resultado.txt
+src
+teste.pf
+teste_saida.txt
+Mon Aug 24 18:37:45 -03 2026
+processflow> run onde
+/mnt/c/Users/luizv/Desktop/3º periodo/processflow
+processflow> start dormir3
+[1] 592
+processflow> jobs
+[1] 592 dormir3 DONE
+processflow> sar  tart dormir3
+[2] 595
+processflow> wait2
+Comando desconhecido.
+processflow> wait 2
+processflow> jobs
+[1] 592 dormir3 DONE
+[2] 595 dormir3 DONE
+processflow> run inexistente
+Erro: task 'inexistente' não encontrada.
+processflow> wait 999
+Erro: job 999 não existe.
+processflow> workdiir  r /diretorio/naoe^[[2~      /exiset  te
+Erro: diretório '/diretorio/nao/existe' não existe.
+processflow> ts ask p lala /a/b
+Task 'lala' cadastrada.
+processflow> run lalala   a
+execv: No such file or directory
+Processo 599 terminou com codigo 1.
+processflow> tsa  ask dfa   falhar /bin/fas lse
+Task 'falhar' cadastrada.
+processflow> run fala har
+Processo 600 terminou com codigo 1.
+processflow> luiz vieira
+Comando desconhecido.
+processflow> exit
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ cat teste.pf
+[?2004ltask listar /bin/ls
+task data /bin/date
+run listar
+run data
+exit[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ ./processflow teste.pf
+[?2004ltask listar /bin/ls
+Task 'listar' cadastrada.
+task data /bin/date
+Task 'data' cadastrada.
+run listar
+Makefile   evidencias.log  nomes.txt	resultado.txt  teste.pf
+README.md  historico.txt   processflow	src	       teste_saida.txt
+run data
+Mon Aug 24 18:43:07 -03 2026
+exit
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ ./processflow teste_errado.pf
+[?2004lErro ao abrir workflow: No such file or directory
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ ./processflow a.pf b.pf
+[?2004lErro: uso correto: ./processflow [workflowFile]
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ printf "task data /bin/date\nrun dat a\n" > sem e[K[K_exit.pf
+[?2004l[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ ./processflow sem_exit.o[Kpf
+[?2004ltask data /bin/date
+Task 'data' cadastrada.
+run data
+Mon Aug 24 18:44:42 -03 2026
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ make cle[Kean
+[?2004lrm -f processflow
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ make
+[?2004lgcc -std=c11 -Wall -Wextra -pedantic src/main.c src/task.c src/job.c -o processflow
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ ./processflow
+[?2004lprocessflow> task i final /bn in/echo PROCESSFLOW_OK
+Task 'final' cadastrada.
+processflow> run d fia nal
+PROCESSFLOW_OK
+processflow> exit
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ date
+[?2004lMon Aug 24 18:45:54 -03 2026
+[?2004h]0;luizv@Luizvieira: /mnt/c/Users/luizv/Desktop/3º periodo/processflow[01;32mluizv@Luizvieira[00m:[01;34m/mnt/c/Users/luizv/Desktop/3º periodo/processflow[00m$ exit
+[?2004lexit
+
+Script done on 2026-08-24 18:45:58-03:00 [COMMAND_EXIT_CODE="0"]

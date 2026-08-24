@@ -7,6 +7,28 @@
 
 #include "task.h"
 
+static int copiar_string(char *destino, size_t capacidade, const char *origem,
+                         const char *campo) {
+    size_t tamanho = strlen(origem);
+    if (tamanho >= capacidade) {
+        printf("Erro: %s excede o limite de %zu caracteres.\n",
+               campo, capacidade - 1);
+        return -1;
+    }
+    memcpy(destino, origem, tamanho + 1);
+    return 0;
+}
+
+void informar_status_processo(pid_t pid, int status) {
+    if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        printf("Processo %ld terminou com codigo %d.\n",
+               (long)pid, WEXITSTATUS(status));
+    } else if (WIFSIGNALED(status)) {
+        printf("Processo %ld terminou pelo sinal %d.\n",
+               (long)pid, WTERMSIG(status));
+    }
+}
+
 void cadastrar_task(
     Task tarefas[],
     int *quantidade,
@@ -23,14 +45,22 @@ void cadastrar_task(
         return;
     }
 
+    if (quantidade_tokens - 2 >= MAX_ARGS) {
+        printf("Erro: task aceita no maximo %d argumentos incluindo o programa.\n",
+               MAX_ARGS - 1);
+        return;
+    }
+
     Task *task = &tarefas[*quantidade];
 
     task->arquivo_entrada[0] = '\0';
     task->arquivo_saida[0] = '\0';
     task->modo_append = 0;
 
-    strcpy(task->nome, tokens[1]);
-    strcpy(task->programa, tokens[2]);
+    if (copiar_string(task->nome, sizeof(task->nome), tokens[1], "nome da task") == -1 ||
+        copiar_string(task->programa, sizeof(task->programa), tokens[2], "programa") == -1) {
+        return;
+    }
 
     task->quantidade_argumentos = 0;
 
@@ -40,6 +70,11 @@ void cadastrar_task(
 
         if (task->argumentos[task->quantidade_argumentos] == NULL) {
             printf("Erro: memória insuficiente.\n");
+            for (int j = 0; j < task->quantidade_argumentos; j++) {
+                free(task->argumentos[j]);
+                task->argumentos[j] = NULL;
+            }
+            task->quantidade_argumentos = 0;
             return;
         }
 
@@ -93,6 +128,8 @@ int executar_task(
         return -1;
     }
 
+    informar_status_processo(pid, status);
+
     return 0;
 }
 
@@ -117,7 +154,7 @@ pid_t iniciar_task(
 
             if (chdir(diretorio_trabalho) == -1) {
                 perror("chdir");
-                exit(EXIT_FAILURE);
+                _exit(EXIT_FAILURE);
             }
         }
 
@@ -130,13 +167,13 @@ pid_t iniciar_task(
 
             if (fd == -1) {
                 perror("open input");
-                exit(EXIT_FAILURE);
+                _exit(EXIT_FAILURE);
             }
 
             if (dup2(fd, STDIN_FILENO) == -1) {
                 perror("dup2 input");
                 close(fd);
-                exit(EXIT_FAILURE);
+                _exit(EXIT_FAILURE);
             }
 
             close(fd);
@@ -160,13 +197,13 @@ pid_t iniciar_task(
 
             if (fd == -1) {
                 perror("open output");
-                exit(EXIT_FAILURE);
+                _exit(EXIT_FAILURE);
             }
 
             if (dup2(fd, STDOUT_FILENO) == -1) {
                 perror("dup2 output");
                 close(fd);
-                exit(EXIT_FAILURE);
+                _exit(EXIT_FAILURE);
             }
 
             close(fd);
@@ -178,16 +215,15 @@ pid_t iniciar_task(
         );
 
         perror("execv");
-        exit(EXIT_FAILURE);
+        _exit(EXIT_FAILURE);
     }
 
     return pid;
 }
 
 int definir_input(Task *task, char *arquivo) {
-    strcpy(task->arquivo_entrada, arquivo);
-
-    return 0;
+    return copiar_string(task->arquivo_entrada, sizeof(task->arquivo_entrada),
+                         arquivo, "caminho de entrada");
 }
 
 int definir_output(
@@ -195,11 +231,24 @@ int definir_output(
     char *arquivo,
     int append
 ) {
-    strcpy(task->arquivo_saida, arquivo);
+    if (copiar_string(task->arquivo_saida, sizeof(task->arquivo_saida),
+                      arquivo, "caminho de saida") == -1) {
+        return -1;
+    }
 
     task->modo_append = append;
 
     return 0;
+}
+
+void liberar_tasks(Task tarefas[], int quantidade) {
+    for (int i = 0; i < quantidade; i++) {
+        for (int j = 0; j < tarefas[i].quantidade_argumentos; j++) {
+            free(tarefas[i].argumentos[j]);
+            tarefas[i].argumentos[j] = NULL;
+        }
+        tarefas[i].quantidade_argumentos = 0;
+    }
 }
 
 int executar_pipe(
@@ -221,6 +270,10 @@ int executar_pipe(
 
         if (pipe(pipes[i]) == -1) {
             perror("pipe");
+            for (int j = 0; j < i; j++) {
+                close(pipes[j][0]);
+                close(pipes[j][1]);
+            }
             return -1;
         }
     }
@@ -233,6 +286,16 @@ int executar_pipe(
 
         if (pid == -1) {
             perror("fork");
+            for (int j = 0; j < quantidade - 1; j++) {
+                close(pipes[j][0]);
+                close(pipes[j][1]);
+            }
+            for (int j = 0; j < i; j++) {
+                int status;
+                if (waitpid(pids[j], &status, 0) != -1) {
+                    informar_status_processo(pids[j], status);
+                }
+            }
             return -1;
         }
 
@@ -245,7 +308,7 @@ int executar_pipe(
 
                 if (chdir(diretorio_trabalho) == -1) {
                     perror("chdir");
-                    exit(EXIT_FAILURE);
+                    _exit(EXIT_FAILURE);
                 }
             }
 
@@ -259,7 +322,7 @@ int executar_pipe(
                 ) {
 
                     perror("dup2 input pipe");
-                    exit(EXIT_FAILURE);
+                    _exit(EXIT_FAILURE);
                 }
             }
 
@@ -273,7 +336,7 @@ int executar_pipe(
                 ) {
 
                     perror("dup2 output pipe");
-                    exit(EXIT_FAILURE);
+                    _exit(EXIT_FAILURE);
                 }
             }
 
@@ -293,7 +356,7 @@ int executar_pipe(
             );
 
             perror("execv");
-            exit(EXIT_FAILURE);
+            _exit(EXIT_FAILURE);
         }
 
         pids[i] = pid;
@@ -308,15 +371,16 @@ int executar_pipe(
 
         int status;
 
-        if (
-            waitpid(
+        pid_t resultado = waitpid(
                 pids[i],
                 &status,
                 0
-            ) == -1
-        ) {
+            );
+        if (resultado == -1) {
 
             perror("waitpid");
+        } else {
+            informar_status_processo(pids[i], status);
         }
     }
 

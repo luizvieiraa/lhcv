@@ -3,6 +3,7 @@
 #include <sys/wait.h>
 
 #include "job.h"
+#include "task.h"
 
 int adicionar_job(
     Job jobs[],
@@ -27,10 +28,7 @@ int adicionar_job(
     job->id = id;
     job->pid = pid;
 
-    strcpy(
-        job->nome,
-        nome
-    );
+    snprintf(job->nome, sizeof(job->nome), "%s", nome);
 
     job->finalizado = 0;
     job->status = 0;
@@ -79,6 +77,9 @@ void atualizar_jobs(
 
             jobs[i].finalizado = 1;
             jobs[i].status = status;
+            informar_status_processo(jobs[i].pid, status);
+        } else if (resultado == -1) {
+            perror("waitpid");
         }
     }
 }
@@ -131,6 +132,7 @@ int aguardar_job(
 
     job->finalizado = 1;
     job->status = status;
+    informar_status_processo(job->pid, status);
 
     return 0;
 }
