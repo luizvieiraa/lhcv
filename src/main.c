@@ -12,7 +12,36 @@
 #define MAX_TOKENS 30
 #define MAX_WORKDIR 500
 
-int main() {
+int main(int argc, char *argv[]) {
+
+    FILE *entrada = stdin;
+    int modo_workflow = 0;
+
+    if(argc > 2){
+
+        printf(
+            "Erro: uso correto: ./processflow [workflowFile]\n"
+        );
+
+        return 1;
+    }
+
+    if (argc == 2) {
+
+    entrada = fopen(
+        argv[1],
+        "r"
+    );
+
+    if (entrada == NULL) {
+
+        perror("Erro ao abrir workflow");
+
+        return 1;
+    }
+
+    modo_workflow = 1;
+}
 
     Task tarefas[MAX_TASKS];
     int quantidade_tasks = 0;
@@ -31,14 +60,34 @@ int main() {
             quantidade_jobs
         );
 
-        printf("processflow> ");
-        fflush(stdout);
+        if (!modo_workflow) {
 
-        if (fgets(comando, sizeof(comando), stdin) == NULL) {
+            printf("processflow> ");
+            fflush(stdout);
+            }
+
+        if (fgets(comando, sizeof(comando), entrada) == NULL) {
             break;
         }
 
-        comando[strcspn(comando, "\n")] = '\0';
+        if (modo_workflow) {
+
+            printf("%s", comando);
+
+            /*
+            * Caso a última linha do arquivo
+            * não tenha \n.
+            */
+            if (
+                strlen(comando) > 0 &&
+                comando[strlen(comando) - 1] != '\n'
+            ) {
+
+                printf("\n");
+            }
+        }
+
+        comando[strcspn(comando, "\r\n")] = '\0';
 
         if (strcmp(comando, "exit") == 0) {
             break;
@@ -558,6 +607,10 @@ int main() {
                 "Comando desconhecido.\n"
             );
         }
+    }
+
+    if(modo_workflow){
+        fclose(entrada);
     }
 
     return 0;

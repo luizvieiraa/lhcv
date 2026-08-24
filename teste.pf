@@ -1,0 +1,5 @@
+task listar /bin/ls
+task data /bin/date
+run listar
+run data
+exit
